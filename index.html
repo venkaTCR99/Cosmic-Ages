@@ -198,10 +198,14 @@
   .tl-empty{ text-align:center; color:var(--muted); font-size:0.85rem; padding:20px 0; }
 
   .watermark{
-    margin-top:30px; padding-top:18px;
-    border-top:1px solid rgba(232,184,92,0.15);
-    font-family:'Fraunces',serif; font-weight:500; font-size:0.78rem;
-    letter-spacing:0.03em; color:rgba(232,184,92,0.75);
+    margin-top:30px; padding-top:16px;
+    border-top:1px solid rgba(232,184,92,0.2);
+    display:inline-flex; align-items:center; gap:8px;
+    font-family:'Fraunces',serif; font-weight:600; font-size:0.95rem;
+    letter-spacing:0.02em; color:var(--gold);
+  }
+  .watermark::before{
+    content:"✦"; font-size:0.85rem; opacity:0.85;
   }
 
   .brand-footer{
@@ -593,6 +597,9 @@
     } else if (t < phases[1]) {
       const local = t - phases[0], dur = phases[1] - phases[0];
       const a = fadeAlpha(local, dur, 400, 300);
+      const countDur = 1300;
+      const countP = Math.min(1, local / countDur);
+      const eased = 1 - Math.pow(1 - countP, 3);
       const rows = [
         ['EARTH', worlds.earth, '#4FA8A0'],
         ['MOON', worlds.moon, '#C9C4B8'],
@@ -600,15 +607,20 @@
       ];
       rows.forEach((r, i) => {
         const y = H * 0.34 + i * 170;
-        const days = (Date.now() - r[1].origin) / MS_DAY;
+        const target = (Date.now() - r[1].origin) / MS_DAY;
+        const shown = target * eased;
         ctxText(ctx, r[0], cx, y, '500 30px Fraunces, serif', r[2], a);
-        ctxText(ctx, fmt(days, 0) + ' days', cx, y + 54, '500 42px "JetBrains Mono", monospace', '#EDEFF4', a);
+        ctxText(ctx, fmt(shown, 0) + ' days', cx, y + 54, '500 42px "JetBrains Mono", monospace', '#EDEFF4', a);
       });
     } else if (t < phases[2]) {
       const local = t - phases[1], dur = phases[2] - phases[1];
       const a = fadeAlpha(local, dur, 400, 300);
+      const countDur = 1100;
+      const countP = Math.min(1, local / countDur);
+      const eased = 1 - Math.pow(1 - countP, 3);
+      const shownYourDays = result.yourDays * eased;
       ctxText(ctx, "YOU'VE EXISTED FOR", cx, H * 0.38, '500 28px Inter, sans-serif', '#8A93A8', a);
-      ctxText(ctx, fmt(result.yourDays, 0), cx, H * 0.46, '700 96px "JetBrains Mono", monospace', '#E8B85C', a);
+      ctxText(ctx, fmt(shownYourDays, 0), cx, H * 0.46, '700 96px "JetBrains Mono", monospace', '#E8B85C', a);
       ctxText(ctx, 'days', cx, H * 0.495, '400 30px Inter, sans-serif', '#8A93A8', a);
       ctxText(ctx, '1 Earth day for every ' + Math.round(result.ratio).toLocaleString() + ' of yours', cx, H * 0.58, '400 26px Inter, sans-serif', '#EDEFF4', a);
     } else {
@@ -632,9 +644,24 @@
         ctxText(ctx, String(e.date.getFullYear()), x, up ? y - 44 : y + 66, '500 20px "JetBrains Mono", monospace', '#E8B85C', dotA);
         ctxText(ctx, truncate(e.title, 22), x, up ? y - 20 : y + 90, '400 18px Inter, sans-serif', '#8A93A8', dotA);
       });
-      ctxText(ctx, 'cosmic-ages · add your date to see yours', cx, H * 0.93, '400 22px Inter, sans-serif', '#8A93A8', a);
+      ctxText(ctx, 'cosmic-ages · add your date to see yours', cx, H * 0.9, '400 22px Inter, sans-serif', '#8A93A8', a);
+      ctxText(ctx, 'IncredibleSwipe Studio', cx, H * 0.955, '600 32px Fraunces, serif', '#E8B85C', a);
     }
-    ctxText(ctx, 'IncredibleSwipe Studio', cx, H * 0.975, '500 20px Fraunces, serif', 'rgba(232,184,92,0.7)', 1);
+
+    // persistent brand badge — drawn every frame, inset from the edge so a
+    // crop can't remove it without also cutting into real content
+    const badgeText = 'IncredibleSwipe Studio';
+    ctx.font = '500 26px Fraunces, serif';
+    const badgeW = ctx.measureText(badgeText).width + 40;
+    const badgeX = W - badgeW - 40, badgeY = 40, badgeH = 52;
+    ctx.globalAlpha = 0.85;
+    ctx.fillStyle = 'rgba(10,14,23,0.55)';
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 26) : ctx.rect(badgeX, badgeY, badgeW, badgeH);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(232,184,92,0.5)'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctxText(ctx, badgeText, badgeX + badgeW / 2, badgeY + badgeH / 2 + 9, '500 26px Fraunces, serif', '#E8B85C', 1);
   }
 
   function generateVideo() {
