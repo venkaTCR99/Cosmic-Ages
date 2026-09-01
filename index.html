@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cosmic Ages</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,340;9..144,500;9..144,600&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0E17;
+    --panel:#121A2B;
+    --panel-2:#161F34;
+    --border:#232E45;
+    --earth:#4FA8A0;
+    --moon:#C9C4B8;
+    --mars:#C1573A;
+    --gold:#E8B85C;
+    --text:#EDEFF4;
+    --muted:#8A93A8;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    position:relative;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    padding:56px 20px 80px;
+    overflow-x:hidden;
+  }
+  #sky{
+    position:fixed; inset:0; width:100%; height:100%;
+    z-index:0; pointer-events:none;
+  }
+  .wrap{max-width:920px;margin:0 auto;position:relative;z-index:1;}
+
+  header{text-align:center;margin-bottom:56px;}
+  header h1{
+    font-family:'Fraunces',serif;
+    font-weight:340;
+    font-size:clamp(2.2rem, 5vw, 3.4rem);
+    letter-spacing:-0.01em;
+    margin:0 0 14px;
+  }
+  header p{
+    color:var(--muted);
+    font-size:1.02rem;
+    max-width:480px;
+    margin:0 auto;
+    line-height:1.55;
+  }
+
+  .counters{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:1px;
+    background:var(--border);
+    border:1px solid var(--border);
+    margin-bottom:14px;
+  }
+  .counter{
+    background:var(--panel); padding:32px 18px 28px; text-align:center;
+    position:relative; overflow:hidden;
+  }
+  .counter::before{
+    content:""; position:absolute; top:0; left:0; right:0; height:2px;
+  }
+  .counter.earth::before{background:var(--earth); box-shadow:0 0 12px 0 var(--earth);}
+  .counter.moon::before{background:var(--moon); box-shadow:0 0 12px 0 var(--moon);}
+  .counter.mars::before{background:var(--mars); box-shadow:0 0 12px 0 var(--mars);}
+  .counter .world{ font-family:'Fraunces',serif; font-size:1.15rem; font-weight:500; margin-bottom:4px; }
+  .counter.earth .world{color:var(--earth);}
+  .counter.moon .world{color:var(--moon);}
+  .counter.mars .world{color:var(--mars);}
+  .counter .since{ color:var(--muted); font-size:0.78rem; margin-bottom:18px; }
+  .counter .num{
+    font-family:'JetBrains Mono',monospace;
+    font-variant-numeric:tabular-nums;
+    font-size:clamp(1.35rem, 3.4vw, 1.7rem);
+    font-weight:500;
+    letter-spacing:-0.02em;
+  }
+  .counter .unit{ display:block; color:var(--muted); font-size:0.7rem; margin-top:6px; font-family:'Inter',sans-serif; }
+
+  .caveat{ text-align:center; color:var(--muted); font-size:0.76rem; margin-bottom:64px; line-height:1.6; }
+
+  .compare{ background:var(--panel); border:1px solid var(--border); padding:36px 28px; text-align:center; margin-bottom:24px; }
+  .compare h2{ font-family:'Fraunces',serif; font-weight:500; font-size:1.4rem; margin:0 0 6px; }
+  .compare .sub{color:var(--muted);font-size:0.92rem;margin-bottom:24px;}
+  .compare form{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+  .compare input[type="date"]{
+    background:var(--panel-2); border:1px solid var(--border); color:var(--text);
+    font-family:'Inter',sans-serif; font-size:0.95rem; padding:12px 14px; outline:none; min-width:200px;
+  }
+  .compare input[type="date"]:focus{border-color:var(--gold);}
+  .compare button{
+    background:var(--gold); color:#1a1408; border:none; font-family:'Inter',sans-serif;
+    font-weight:500; font-size:0.95rem; padding:12px 26px; cursor:pointer;
+  }
+  .compare button:hover{background:#f0c877;}
+  .hint{color:var(--muted);font-size:0.82rem;margin-top:14px;min-height:1.2em;}
+
+  #reveal{display:none;}
+  #reveal.show{display:block;}
+
+  .card{
+    background: linear-gradient(155deg, #16203a 0%, var(--panel) 55%, #191024 100%);
+    border:1px solid var(--border);
+    padding:44px 32px 38px;
+    text-align:center;
+    position:relative;
+    box-shadow: 0 0 60px -20px rgba(232,184,92,0.18), 0 24px 60px -30px rgba(0,0,0,0.6);
+  }
+  .card::before{
+    content:"";
+    position:absolute; inset:8px;
+    border:1px solid rgba(232,184,92,0.2);
+    pointer-events:none;
+  }
+  .card .corner{
+    position:absolute; width:16px; height:16px; border:1.5px solid var(--gold); opacity:0.6;
+  }
+  .card .corner.tl{ top:4px; left:4px; border-right:none; border-bottom:none; }
+  .card .corner.tr{ top:4px; right:4px; border-left:none; border-bottom:none; }
+  .card .corner.bl{ bottom:4px; left:4px; border-right:none; border-top:none; }
+  .card .corner.br{ bottom:4px; right:4px; border-left:none; border-top:none; }
+  .card .eyebrow{ color:var(--muted); font-size:0.8rem; letter-spacing:0.04em; margin-bottom:18px; }
+  .card .big{
+    font-family:'JetBrains Mono',monospace; font-variant-numeric:tabular-nums;
+    font-size:clamp(2.1rem, 7vw, 3.6rem); color:var(--gold); font-weight:700; line-height:1; margin-bottom:6px;
+    text-shadow:0 0 30px rgba(232,184,92,0.35);
+  }
+  .card .bigunit{color:var(--muted);font-size:0.95rem;margin-bottom:30px;}
+  .stats{
+    display:grid; grid-template-columns:1fr 1fr; gap:1px;
+    background:var(--border); border:1px solid var(--border); text-align:left; margin-bottom:8px;
+  }
+  .stat{background:var(--panel-2);padding:18px 20px;}
+  .stat .label{color:var(--muted);font-size:0.76rem;margin-bottom:6px;}
+  .stat .val{ font-family:'Fraunces',serif; font-weight:500; font-size:1.15rem; }
+  @media (max-width:520px){ .stats{grid-template-columns:1fr;} }
+
+  .timeline-wrap{ margin-top:34px; text-align:left; }
+  .timeline-wrap h3{
+    font-family:'Fraunces',serif; font-weight:500; font-size:1.05rem; margin:0 0 4px; text-align:center;
+  }
+  .timeline-wrap .tsub{ color:var(--muted); font-size:0.8rem; text-align:center; margin-bottom:38px; }
+  .timeline{ position:relative; height:150px; margin:0 26px 0 10px; }
+  .tl-line{
+    position:absolute; left:0; right:0; top:50%; height:2px;
+    background:linear-gradient(90deg, transparent, rgba(138,147,168,0.35) 6%, rgba(232,184,92,0.55) 88%, var(--gold) 100%);
+  }
+  .tl-dot{ position:absolute; top:50%; transform:translate(-50%,-50%); }
+  .tl-dot .pt{
+    width:7px; height:7px; border-radius:50%; background:var(--gold);
+    box-shadow:0 0 0 3px rgba(232,184,92,0.15);
+  }
+  .tl-now{
+    position:absolute; top:50%; right:-3px; transform:translate(50%,-50%);
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+  }
+  .tl-now .pt{
+    width:11px; height:11px; border-radius:50%; background:var(--gold);
+    box-shadow:0 0 0 4px rgba(232,184,92,0.22), 0 0 14px 2px rgba(232,184,92,0.5);
+  }
+  @media (prefers-reduced-motion: no-preference){
+    .tl-now .pt{ animation:tlpulse 2.2s ease-in-out infinite; }
+  }
+  @keyframes tlpulse{
+    0%,100%{ box-shadow:0 0 0 4px rgba(232,184,92,0.22), 0 0 14px 2px rgba(232,184,92,0.5); }
+    50%{ box-shadow:0 0 0 7px rgba(232,184,92,0.12), 0 0 20px 4px rgba(232,184,92,0.65); }
+  }
+  .tl-now .lbl{
+    position:absolute; top:22px; width:120px; text-align:center; right:-54px;
+  }
+  .tl-now .lbl .yr{
+    font-family:'JetBrains Mono',monospace; font-size:0.68rem; color:var(--gold); display:block; margin-bottom:3px;
+  }
+  .tl-now .lbl .tt{ font-size:0.68rem; color:var(--text); line-height:1.3; display:block; }
+  .tl-dot .stub{
+    position:absolute; left:50%; width:1px; background:var(--border); transform:translateX(-50%);
+  }
+  .tl-dot.top .stub{ bottom:3px; height:26px; }
+  .tl-dot.bot .stub{ top:3px; height:26px; }
+  .tl-dot .lbl{
+    position:absolute; left:50%; transform:translateX(-50%); width:108px; text-align:center;
+  }
+  .tl-dot.top .lbl{ bottom:33px; }
+  .tl-dot.bot .lbl{ top:33px; }
+  .tl-dot .lbl .yr{
+    font-family:'JetBrains Mono',monospace; font-size:0.68rem; color:var(--gold); display:block; margin-bottom:3px;
+  }
+  .tl-dot .lbl .tt{
+    font-size:0.68rem; color:var(--muted); line-height:1.3; display:block;
+  }
+  .tl-empty{ text-align:center; color:var(--muted); font-size:0.85rem; padding:20px 0; }
+
+  .watermark{
+    margin-top:30px; padding-top:18px;
+    border-top:1px solid rgba(232,184,92,0.15);
+    font-family:'Fraunces',serif; font-weight:500; font-size:0.78rem;
+    letter-spacing:0.03em; color:rgba(232,184,92,0.75);
+  }
+
+  .brand-footer{
+    text-align:center; color:var(--muted); font-size:0.78rem; margin-top:64px;
+  }
+  .brand-footer span{ color:var(--gold); font-family:'Fraunces',serif; font-weight:500; }
+
+  .actions{ display:flex; justify-content:center; gap:12px; margin-top:26px; flex-wrap:wrap; }
+  .actions button{
+    background:transparent; border:1px solid var(--border); color:var(--text);
+    font-family:'Inter',sans-serif; font-size:0.88rem; padding:10px 20px; cursor:pointer;
+  }
+  .actions button:hover:not(:disabled){border-color:var(--gold);color:var(--gold);}
+  .actions button:disabled{opacity:0.5;cursor:default;}
+  .video-hint{ text-align:center; color:var(--muted); font-size:0.78rem; margin-top:12px; }
+
+  @media (max-width:640px){
+    .counters{grid-template-columns:1fr;}
+    .counter{padding:22px 18px;}
+    .tl-dot .lbl{width:84px;}
+    .tl-now .lbl{width:78px; right:-30px; font-size:0.9;}
+  }
+</style>
+</head>
+<body>
+<canvas id="sky"></canvas>
+<div class="wrap">
+
+  <header>
+    <h1>Cosmic Ages</h1>
+    <p>Earth, the Moon, and Mars, counted in days since they formed &mdash; running right now, live. Add your birthdate to see where you fit.</p>
+  </header>
+
+  <div class="counters">
+    <div class="counter earth">
+      <div class="world">Earth</div>
+      <div class="since">since formation, ~4.54 billion years ago</div>
+      <div class="num" id="earthNum">0</div>
+      <span class="unit">days</span>
+    </div>
+    <div class="counter moon">
+      <div class="world">Moon</div>
+      <div class="since">since formation, ~4.51 billion years ago</div>
+      <div class="num" id="moonNum">0</div>
+      <span class="unit">days</span>
+    </div>
+    <div class="counter mars">
+      <div class="world">Mars</div>
+      <div class="since">since formation, ~4.60 billion years ago</div>
+      <div class="num" id="marsNum">0</div>
+      <span class="unit">days</span>
+    </div>
+  </div>
+  <div class="caveat">Formation ages are scientific estimates, each with an uncertainty of tens of millions of years &mdash; treat these as illustrative, not exact.</div>
+
+  <div class="compare">
+    <h2>Where do you fit?</h2>
+    <div class="sub">Enter your date of birth to compare your days against theirs.</div>
+    <form id="form">
+      <input type="date" id="dob" required>
+      <button type="submit">Compare</button>
+    </form>
+    <div class="hint" id="hint"></div>
+  </div>
+
+  <div id="reveal">
+    <div class="card" id="card">
+      <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+      <div class="eyebrow">Your cosmic age</div>
+      <div class="big" id="yourDays">0</div>
+      <div class="bigunit">days alive</div>
+      <div class="stats">
+        <div class="stat">
+          <div class="label">Share of Earth's history</div>
+          <div class="val" id="shareEarth">&mdash;</div>
+        </div>
+        <div class="stat">
+          <div class="label">Earth days per one of yours</div>
+          <div class="val" id="ratioEarth">&mdash;</div>
+        </div>
+        <div class="stat">
+          <div class="label">Your age in Mars sols</div>
+          <div class="val" id="marsSols">&mdash;</div>
+        </div>
+        <div class="stat">
+          <div class="label">Your age in lunar months</div>
+          <div class="val" id="lunarMonths">&mdash;</div>
+        </div>
+      </div>
+
+      <div class="timeline-wrap">
+        <h3>What history looked like along the way</h3>
+        <div class="tsub">Major events, placed on your own timeline</div>
+        <div class="timeline" id="timeline"></div>
+      </div>
+      <div class="watermark" id="watermark">IncredibleSwipe Studio</div>
+    </div>
+    <div class="actions">
+      <button id="downloadBtn" type="button">Save as image</button>
+      <button id="videoBtn" type="button">Create 10s video</button>
+    </div>
+    <div class="video-hint" id="videoHint"></div>
+  </div>
+
+  <footer class="brand-footer">
+    A weekend experiment by <span>IncredibleSwipe Studio</span>
+  </footer>
+
+</div>
+
+<script>
+  // ---- ambient starfield (depth + twinkle, static under reduced-motion) ----
+  (function () {
+    const canvas = document.getElementById('sky');
+    const ctx = canvas.getContext('2d');
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let W, H, stars, nebulae;
+
+    function build() {
+      W = canvas.width = window.innerWidth;
+      H = canvas.height = document.documentElement.scrollHeight;
+      const count = Math.round((W * H) / 9000);
+      stars = Array.from({ length: count }, () => {
+        const layer = Math.random();
+        return {
+          x: Math.random() * W,
+          y: Math.random() * H,
+          r: layer < 0.7 ? Math.random() * 0.7 + 0.3 : Math.random() * 1.3 + 0.8,
+          baseA: layer < 0.7 ? Math.random() * 0.35 + 0.15 : Math.random() * 0.4 + 0.4,
+          speed: Math.random() * 0.0016 + 0.0006,
+          phase: Math.random() * Math.PI * 2,
+        };
+      });
+      nebulae = [
+        { x: W * 0.15, y: H * 0.05, r: Math.max(W, 400) * 0.5, c: 'rgba(79,168,160,0.05)' },
+        { x: W * 0.85, y: H * 0.25, r: Math.max(W, 400) * 0.45, c: 'rgba(193,87,58,0.045)' },
+        { x: W * 0.5, y: H * 0.02, r: Math.max(W, 400) * 0.6, c: 'rgba(232,184,92,0.04)' },
+      ];
+    }
+
+    function draw(t) {
+      ctx.clearRect(0, 0, W, H);
+      nebulae.forEach(n => {
+        const g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r);
+        g.addColorStop(0, n.c);
+        g.addColorStop(1, 'transparent');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, W, H);
+      });
+      stars.forEach(s => {
+        const tw = reduced ? 0 : Math.sin(t * s.speed + s.phase) * 0.3;
+        ctx.globalAlpha = Math.max(0.08, s.baseA + tw);
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+    }
+
+    build();
+    window.addEventListener('resize', build);
+    if (reduced) {
+      draw(0);
+    } else {
+      function loop(t) { draw(t); requestAnimationFrame(loop); }
+      requestAnimationFrame(loop);
+    }
+  })();
+
+  const MS_DAY = 86400000;
+  const now0 = Date.now();
+
+  const worlds = {
+    earth: { years: 4.54e9, el: document.getElementById('earthNum') },
+    moon:  { years: 4.51e9, el: document.getElementById('moonNum') },
+    mars:  { years: 4.60e9, el: document.getElementById('marsNum') },
+  };
+  Object.values(worlds).forEach(w => { w.origin = now0 - w.years * 365.25 * MS_DAY; });
+
+  function fmt(n, d) { return n.toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d }); }
+
+  function tick() {
+    const t = Date.now();
+    Object.values(worlds).forEach(w => { w.el.textContent = fmt((t - w.origin) / MS_DAY, 2); });
+  }
+
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function spinUp() {
+    if (prefersReduced) { tick(); setInterval(tick, 1000); return; }
+    const duration = 1400;
+    const start = performance.now();
+    const ease = x => 1 - Math.pow(1 - x, 3);
+    function frame(t) {
+      const p = Math.min((t - start) / duration, 1);
+      const e = ease(p);
+      const now = Date.now();
+      Object.values(worlds).forEach(w => {
+        const target = (now - w.origin) / MS_DAY;
+        w.el.textContent = fmt(target * e, 2);
+      });
+      if (p < 1) requestAnimationFrame(frame);
+      else { tick(); setInterval(tick, 1000); }
+    }
+    requestAnimationFrame(frame);
+  }
+  spinUp();
+
+  // ---- historical events (fixed, well-established dates) ----
+  const EVENTS = [
+    ['1969-07-20', "Apollo 11 — humans land on the Moon"],
+    ['1989-11-09', "The Berlin Wall falls"],
+    ['1991-08-06', "The World Wide Web goes public"],
+    ['1996-07-05', "Dolly the sheep, first cloned mammal, is born"],
+    ['1998-09-04', "Google is founded"],
+    ['2001-09-11', "September 11 attacks"],
+    ['2004-02-04', "Facebook is founded"],
+    ['2005-02-14', "YouTube is founded"],
+    ['2007-06-29', "The first iPhone goes on sale"],
+    ['2008-09-15', "Lehman Brothers collapses, global financial crisis"],
+    ['2009-01-20', "Barack Obama becomes first Black U.S. president"],
+    ['2011-10-31', "World population reaches 7 billion"],
+    ['2012-08-06', "Curiosity rover lands on Mars"],
+    ['2014-09-24', "India's Mangalyaan enters Mars orbit"],
+    ['2016-04-11', "UPI digital payments launches in India"],
+    ['2016-11-08', "India demonetises high-value currency notes"],
+    ['2019-12-31', "First COVID-19 cases identified"],
+    ['2020-03-11', "WHO declares COVID-19 a pandemic"],
+    ['2022-11-15', "World population reaches 8 billion"],
+    ['2022-11-30', "ChatGPT launches, consumer AI boom begins"],
+    ['2023-08-23', "Chandrayaan-3 lands near the Moon's south pole"],
+  ].map(([d, t]) => ({ date: new Date(d + 'T00:00:00'), title: t }));
+
+  function buildTimelineEvents(dobMs, nowMs) {
+    const span = nowMs - dobMs;
+    const items = EVENTS
+      .filter(e => e.date.getTime() > dobMs && e.date.getTime() < nowMs)
+      .map(e => ({ ...e, pos: ((e.date.getTime() - dobMs) / span) * 100 }));
+    const kept = [];
+    let lastPos = -100;
+    for (const it of items) {
+      if (it.pos - lastPos >= 8) { kept.push(it); lastPos = it.pos; }
+    }
+    return kept;
+  }
+
+  function renderTimeline(kept, yourDays) {
+    const el = document.getElementById('timeline');
+    el.innerHTML = '';
+    const line = document.createElement('div');
+    line.className = 'tl-line';
+    el.appendChild(line);
+
+    if (!kept.length) {
+      const empty = document.createElement('div');
+      empty.className = 'tl-empty';
+      empty.textContent = 'Your timeline is just getting started — history is still catching up.';
+      el.appendChild(empty);
+    } else {
+      kept.forEach((e, i) => {
+        const dot = document.createElement('div');
+        dot.className = 'tl-dot ' + (i % 2 === 0 ? 'top' : 'bot');
+        dot.style.left = Math.min(94, Math.max(3, e.pos)) + '%';
+        dot.innerHTML =
+          '<span class="stub"></span>' +
+          '<span class="pt"></span>' +
+          '<span class="lbl"><span class="yr">' + e.date.getFullYear() + '</span><span class="tt">' + e.title + '</span></span>';
+        el.appendChild(dot);
+      });
+    }
+
+    const now = document.createElement('div');
+    now.className = 'tl-now';
+    now.innerHTML =
+      '<span class="pt"></span>' +
+      '<span class="lbl"><span class="yr">TODAY</span><span class="tt">' + fmt(yourDays, 0) + ' days</span></span>';
+    el.appendChild(now);
+  }
+
+  // ---- personal comparison ----
+  const form = document.getElementById('form');
+  const hint = document.getElementById('hint');
+  const reveal = document.getElementById('reveal');
+  let lastResult = null;
+
+  function runCompare() {
+    const val = document.getElementById('dob').value;
+    if (!val) { hint.textContent = 'Add your date of birth to see the comparison.'; return; }
+    const dob = new Date(val + 'T00:00:00');
+    const t = Date.now();
+    if (isNaN(dob.getTime())) { hint.textContent = "That date didn't parse — try picking it from the calendar."; return; }
+    if (dob.getTime() > t) { hint.textContent = 'That date is in the future.'; return; }
+
+    const yourDays = (t - dob.getTime()) / MS_DAY;
+    const earthDays = (t - worlds.earth.origin) / MS_DAY;
+    const share = (yourDays / earthDays) * 100;
+    const ratio = earthDays / yourDays;
+    const marsSols = yourDays / 1.0275;
+    const lunarMonths = yourDays / 29.53;
+    const events = buildTimelineEvents(dob.getTime(), t);
+
+    document.getElementById('yourDays').textContent = fmt(yourDays, 1);
+    document.getElementById('shareEarth').textContent = share.toExponential(2) + '%';
+    document.getElementById('ratioEarth').textContent = '1 in ' + Math.round(ratio).toLocaleString();
+    document.getElementById('marsSols').textContent = fmt(marsSols, 0) + ' sols';
+    document.getElementById('lunarMonths').textContent = fmt(lunarMonths, 0) + ' cycles';
+    renderTimeline(events, yourDays);
+
+    lastResult = { yourDays, share, ratio, marsSols, lunarMonths, events, dobMs: dob.getTime() };
+
+    hint.textContent = '';
+    reveal.classList.add('show');
+    reveal.scrollIntoView({ behavior: prefersReduced ? 'auto' : 'smooth', block: 'nearest' });
+  }
+
+  form.addEventListener('submit', (e) => { e.preventDefault(); runCompare(); });
+  form.querySelector('button[type="submit"]').addEventListener('click', (e) => { e.preventDefault(); runCompare(); });
+
+  // ---- image export ----
+  let html2canvasPromise = null;
+  function loadHtml2Canvas() {
+    if (window.html2canvas) return Promise.resolve();
+    if (!html2canvasPromise) {
+      html2canvasPromise = new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+        s.onload = () => resolve();
+        s.onerror = () => reject(new Error('failed to load'));
+        document.body.appendChild(s);
+      });
+    }
+    return html2canvasPromise;
+  }
+
+  document.getElementById('downloadBtn').addEventListener('click', (e) => {
+    const btn = e.currentTarget;
+    const original = btn.textContent;
+    btn.textContent = 'Preparing…'; btn.disabled = true;
+    loadHtml2Canvas().then(() => {
+      const card = document.getElementById('card');
+      return window.html2canvas(card, { backgroundColor: '#0A0E17', scale: 2 });
+    }).then(canvas => {
+      const link = document.createElement('a');
+      link.download = 'cosmic-age.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      btn.textContent = original; btn.disabled = false;
+    }).catch(() => {
+      btn.textContent = "Couldn't export — screenshot instead";
+      setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 2200);
+    });
+  });
+
+  // ---- 10s video export (canvas + MediaRecorder, exports .webm) ----
+  const videoBtn = document.getElementById('videoBtn');
+  const videoHint = document.getElementById('videoHint');
+  const STARS = Array.from({ length: 90 }, () => ({
+    x: Math.random(), y: Math.random(), r: Math.random() * 1.6 + 0.4, a: Math.random() * 0.5 + 0.2
+  }));
+
+  function fadeAlpha(localT, dur, fadeIn, fadeOut) {
+    if (localT < fadeIn) return localT / fadeIn;
+    if (localT > dur - fadeOut) return Math.max(0, (dur - localT) / fadeOut);
+    return 1;
+  }
+  function ctxText(ctx, text, x, y, font, color, alpha, align) {
+    ctx.globalAlpha = alpha; ctx.fillStyle = color; ctx.font = font;
+    ctx.textAlign = align || 'center'; ctx.fillText(text, x, y); ctx.globalAlpha = 1;
+  }
+  function truncate(s, n) { return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+
+  function drawFrame(ctx, W, H, t, phases, result) {
+    ctx.clearRect(0, 0, W, H);
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, '#16203a'); grad.addColorStop(0.4, '#0A0E17'); grad.addColorStop(1, '#0A0E17');
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+    STARS.forEach(s => {
+      ctx.globalAlpha = s.a; ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+
+    const cx = W / 2;
+
+    if (t < phases[0]) {
+      const a = fadeAlpha(t, phases[0], 500, 400);
+      ctxText(ctx, 'COSMIC AGES', cx, H * 0.46, '600 68px Fraunces, serif', '#EDEFF4', a);
+      ctxText(ctx, 'your life, measured against three worlds', cx, H * 0.51, '400 26px Inter, sans-serif', '#8A93A8', a);
+    } else if (t < phases[1]) {
+      const local = t - phases[0], dur = phases[1] - phases[0];
+      const a = fadeAlpha(local, dur, 400, 300);
+      const rows = [
+        ['EARTH', worlds.earth, '#4FA8A0'],
+        ['MOON', worlds.moon, '#C9C4B8'],
+        ['MARS', worlds.mars, '#C1573A'],
+      ];
+      rows.forEach((r, i) => {
+        const y = H * 0.34 + i * 170;
+        const days = (Date.now() - r[1].origin) / MS_DAY;
+        ctxText(ctx, r[0], cx, y, '500 30px Fraunces, serif', r[2], a);
+        ctxText(ctx, fmt(days, 0) + ' days', cx, y + 54, '500 42px "JetBrains Mono", monospace', '#EDEFF4', a);
+      });
+    } else if (t < phases[2]) {
+      const local = t - phases[1], dur = phases[2] - phases[1];
+      const a = fadeAlpha(local, dur, 400, 300);
+      ctxText(ctx, "YOU'VE EXISTED FOR", cx, H * 0.38, '500 28px Inter, sans-serif', '#8A93A8', a);
+      ctxText(ctx, fmt(result.yourDays, 0), cx, H * 0.46, '700 96px "JetBrains Mono", monospace', '#E8B85C', a);
+      ctxText(ctx, 'days', cx, H * 0.495, '400 30px Inter, sans-serif', '#8A93A8', a);
+      ctxText(ctx, '1 Earth day for every ' + Math.round(result.ratio).toLocaleString() + ' of yours', cx, H * 0.58, '400 26px Inter, sans-serif', '#EDEFF4', a);
+    } else {
+      const local = t - phases[2], dur = phases[3] - phases[2];
+      const a = fadeAlpha(local, dur, 300, 300);
+      ctxText(ctx, 'ALONG THE WAY', cx, H * 0.28, '500 30px Fraunces, serif', '#EDEFF4', a);
+      const y = H * 0.46;
+      ctx.globalAlpha = a * 0.6; ctx.strokeStyle = '#232E45'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(W * 0.08, y); ctx.lineTo(W * 0.92, y); ctx.stroke(); ctx.globalAlpha = 1;
+
+      const kept = result.events.slice(0, 7);
+      const revealSpan = dur - 800;
+      kept.forEach((e, i) => {
+        const threshold = kept.length ? (i / kept.length) * revealSpan : 0;
+        if (local < threshold) return;
+        const dotA = Math.min(1, (local - threshold) / 300) * a;
+        const x = W * 0.08 + (e.pos / 100) * (W * 0.84);
+        const up = i % 2 === 0;
+        ctx.globalAlpha = dotA; ctx.fillStyle = '#E8B85C';
+        ctx.beginPath(); ctx.arc(x, y, 6, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+        ctxText(ctx, String(e.date.getFullYear()), x, up ? y - 44 : y + 66, '500 20px "JetBrains Mono", monospace', '#E8B85C', dotA);
+        ctxText(ctx, truncate(e.title, 22), x, up ? y - 20 : y + 90, '400 18px Inter, sans-serif', '#8A93A8', dotA);
+      });
+      ctxText(ctx, 'cosmic-ages · add your date to see yours', cx, H * 0.93, '400 22px Inter, sans-serif', '#8A93A8', a);
+    }
+    ctxText(ctx, 'IncredibleSwipe Studio', cx, H * 0.975, '500 20px Fraunces, serif', 'rgba(232,184,92,0.7)', 1);
+  }
+
+  function generateVideo() {
+    if (!lastResult) { videoHint.textContent = 'Compare your date first, then create the video.'; return; }
+    if (!('MediaRecorder' in window) || !document.createElement('canvas').captureStream) {
+      videoHint.textContent = "Video export isn't supported in this browser — try Chrome on desktop or Android.";
+      return;
+    }
+    const W = 1080, H = 1920;
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    const stream = canvas.captureStream(30);
+
+    let mimeType = 'video/webm;codecs=vp9';
+    if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm;codecs=vp8';
+    if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm';
+
+    let recorder;
+    try { recorder = new MediaRecorder(stream, { mimeType }); }
+    catch (err) { videoHint.textContent = "Couldn't start the recorder in this browser."; return; }
+
+    const chunks = [];
+    recorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+    recorder.onstop = () => {
+      const blob = new Blob(chunks, { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'cosmic-age.webm'; a.click();
+      URL.revokeObjectURL(url);
+      videoBtn.textContent = 'Create 10s video'; videoBtn.disabled = false;
+      videoHint.textContent = 'Downloaded as .webm — plays on WhatsApp/Android/Chrome directly. For Instagram/iOS you may need to convert to .mp4 first.';
+    };
+
+    const total = 9500;
+    const phases = [1800, 4200, 6900, total];
+    const start = performance.now();
+
+    videoBtn.textContent = 'Rendering…'; videoBtn.disabled = true;
+    videoHint.textContent = 'Recording a 9.5s clip — keep this tab open…';
+    recorder.start();
+
+    function frame(now) {
+      const t = now - start;
+      drawFrame(ctx, W, H, Math.min(t, total), phases, lastResult);
+      if (t < total) requestAnimationFrame(frame);
+      else recorder.stop();
+    }
+    requestAnimationFrame(frame);
+  }
+
+  videoBtn.addEventListener('click', () => {
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(generateVideo);
+    } else {
+      generateVideo();
+    }
+  });
+</script>
+</body>
+</html>
